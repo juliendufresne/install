@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# -e: exit as soon as a command exit with a non-zero status code
+# -u: prevent from any undefined variable
+# -o pipefail: force pipelines to fail on the first non-zero status code
+set -euo pipefail
+# Avoid using space as a separator (default IFS=$' \t\n')
+IFS=$'\n\t'
+
+declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+source "$SCRIPT_DIR/tools/_all_tools.sh"
+
+function main
+{
+    declare release_distributor_id
+    declare release_codename
+    declare -r script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+    title "Software installation"
+    ensure_user_is_in_sudoers || return "$?"
+
+    identify_release "release_distributor_id" "release_codename" || return "$?"
+    case "$release_distributor_id" in
+        debian|ubuntu)
+            # ok
+            ;;
+        *)
+            error "This install is not compatible with your distribution '$release_distributor_id'"
+            return 1
+            ;;
+    esac
+
+
+    section "Pre install"
+
+    declare dir="$script_dir/hooks/pre-install"
+    for file in $(cd "$dir" && ls -1 *.sh | sort -n)
+    do
+        /usr/bin/env bash "$dir/$file" || true
+    done
+
+    dir="$script_dir/software"
+    for file in $(cd "$dir" && ls -1 *.sh | sort -n)
+    do
+        action_name="${file##[0-9][0-9]-}"
+        action_name="${action_name%.sh}"
+        section "Install software $action_name"
+        /usr/bin/env bash "$dir/$file" || true
+    done
+
+    section "Post install"
+
+    dir="$script_dir/hooks/post-install"
+    for file in $(cd "$dir" && ls -1 *.sh | sort -n)
+    do
+        /usr/bin/env bash "$dir/$file" || true
+    done
+
+    section "Software versions"
+
+    dir="$script_dir/software"
+    for file in $(cd "$dir" && ls -1 *.sh | sort -n)
+    do
+        /usr/bin/env bash "$script_dir/software/$file" --version
+    done
+}
+
+main
