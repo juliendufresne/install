@@ -9,7 +9,7 @@ IFS=$'\n\t'
 function main()
 {
     declare -r current_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    title "Bootstrap installation"
+    title 'Bootstrap installation'
 
     check_requirements
 
@@ -22,9 +22,9 @@ function main()
     fi
 
     add_current_user_to_sudoers "$USER"
-    install_ssh
-    install_git
+    install_project
 
+    title 'Run install script'
     /usr/bin/env bash "$HOME/install/src/install" || return "$?"
 
     return 0
@@ -33,9 +33,9 @@ readonly -f "main"
 
 function check_requirements()
 {
-    declare has_errors=false
-    declare check_ok="\e[32m\xE2\x9C\x94\e[39m"
-    declare check_fail="\e[31m\xE2\x9C\x98\e[39m"
+    declare    has_errors=false
+    declare -r check_ok="\e[32m\xE2\x9C\x94\e[39m"
+    declare -r check_fail="\e[31m\xE2\x9C\x98\e[39m"
 
     section "Check script requirements"
 
@@ -69,78 +69,60 @@ function check_requirements()
         return 1
     fi
 
-    success "all requirements are met"
-
     return 0
 }
 
 function add_current_user_to_sudoers()
 {
-    section "Add current user to sudoers"
+    section 'sudo'
 
     declare -r user="$1"
 
-    declare -r sudoers_dir="/etc/sudoers.d"
+    declare -r sudoers_dir='/etc/sudoers.d'
     declare -r sudoers_file="${sudoers_dir}/$(echo "$user" | iconv -f utf8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]' | sed -e 's/\s//g' -e 's/[^a-z0-9]//g')"
     declare -r sudoers_file_content="$user ALL=(ALL) NOPASSWD: ALL"
 
-    note "Root password may be required."
-    if ! hash "sudo" &>/dev/null
+    if hash 'sudo' &>/dev/null && sudo -l -U "$user" | grep -q 'NOPASSWD:' &>/dev/null
     then
-        su -c "
-apt-get install --yes -qq sudo &>/dev/null
-mkdir -p \"$sudoers_dir\"
-printf \"$sudoers_file_content\n\" > \"$sudoers_file\"
-"
-
-    elif sudo -l -U "$USER" | grep -q "NOPASSWD:" &>/dev/null
-    then
-        success "You already are in the sudoers"
+        success 'Already in the sudoers'
 
         return 0
+    fi
+
+    note 'Root password may be required.'
+
+    if ! hash "sudo" &>/dev/null
+    then
+        printf '   install sudo\n'
+        su -c "
+apt-get install --yes -qq sudo
+mkdir -p \"$sudoers_dir\"
+printf '%s\n' \"$sudoers_file_content\" > \"$sudoers_file\"
+"
     # mainly for debian if sudo has been installed without adding user to sudoers
-    elif ! hash "visudo" &>/dev/null
+    elif ! hash 'visudo' &>/dev/null
     then
         su -c "
 mkdir -p \"$sudoers_dir\"
-printf \"$sudoers_file_content\n\" > \"$sudoers_file\"
+printf '%s\n' \"$sudoers_file_content\" > \"$sudoers_file\"
 "
     else
-        printf "$sudoers_file_content\n" | sudo EDITOR='tee' visudo -f "$sudoers_file" >/dev/null
+        printf '%s\n' "$sudoers_file_content" | sudo EDITOR='tee' visudo -f "$sudoers_file" >/dev/null
     fi
 
-    success
+    success "User $user is registered in the sudoers"
 
     return 0
 }
 
-function install_ssh()
+function install_project()
 {
-    section "Install ssh"
+    section 'Prepare project'
 
-    if ! dpkg -s openssh-client &>/dev/null
+    if ! hash 'git' &>/dev/null
     then
-        note "Installing openssh-client. Root password may be required."
-        sudo apt-get install --yes -qq openssh-client >/dev/null
-    fi
-
-    [[ -d "$HOME/.ssh" ]] || mkdir "$HOME/.ssh"
-
-    chmod 0700 "$HOME/.ssh"
-
-    success
-
-    return 0
-}
-
-function install_git
-{
-    section "Install git"
-
-    if ! hash "git" &>/dev/null
-    then
-        note "Installing git. Root password may be required."
-        sudo apt-get install --yes -qq git >/dev/null
+        note 'Installing git.'
+        sudo apt-get install --yes -qq git
     fi
 
     if ! [[ -d "$HOME/install" ]]
@@ -149,7 +131,7 @@ function install_git
         git clone --quiet https://github.com/juliendufresne/install.git "$HOME/install"
     fi
 
-    success
+    success "Project has been setup correctly into $HOME/install."
 
     return 0
 }
@@ -174,13 +156,14 @@ function header()
     declare -r -i text_length="$(echo -ne "$text" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | wc -c)"
     declare -r pad="$(printf %${text_length}s|tr ' ' "$underline_char")"
 
-    printf '\e[33m%b\e[39m\n' "$text"
-    printf '\e[33m%*.*s\e[39m\n' '0' "$text_length" "$pad"
+    printf '\e[34m%b\e[39m\n' "$text"
+    printf '\e[34m%*.*s\e[39m\n' '0' "$text_length" "$pad"
+    printf '\n'
 }
 
 function success()
 {
-    block " " "OK" "\e[37;44m" false "$@"
+    block " " "OK" "\e[37;42m" false "$@"
 }
 
 function error()
@@ -226,6 +209,7 @@ function block()
 
     declare -r -i fold_length="$((terminal_length - prefix_length - type_length))"
 
+    printf '\n' >"$file_descriptor"
     printf '%b%*.*s%b\n' "$color" '0' "$terminal_length" "$pad" "$color_reset" >"$file_descriptor"
     if [[ $# -eq 0 ]]
     then
@@ -249,6 +233,7 @@ function block()
         done
     fi
     printf '%b%*.*s%b\n' "$color" '0' "$terminal_length" "$pad" "$color_reset" >"$file_descriptor"
+    printf '\n' >"$file_descriptor"
 }
 
 main

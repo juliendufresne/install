@@ -10,11 +10,21 @@ IFS=$'\n\t'
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
+function check_exists
+{
+    if ! hash 'KeeWeb' &>/dev/null
+    then
+        return 1
+    fi
+
+    return 0
+}
+
 function main
 {
     parse_opt "$@" || return "$?"
 
-    if hash "KeeWeb" &>/dev/null
+    if check_exists
     then
         return 0
     fi

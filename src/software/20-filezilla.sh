@@ -9,26 +9,30 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r PACKAGE='filezilla'
+
+function check_exists
+{
+    if ! hash "$PACKAGE" &>/dev/null
+    then
+        return 1
+    fi
+
+    return 0
+}
 
 function main
 {
     parse_opt "$@" || return "$?"
 
-    declare -r package_name="filezilla"
-    if hash "$package_name" &>/dev/null
+    if check_exists
     then
         return 0
     fi
 
-    declare -r output="$(mktemp)"
-
-    install_package "$package_name" &>"$output" || {
-        error_with_output_file "$output" "Something went wrong while installing $package_name package"
-
-        return 1
-    }
-
-    rm "$output"
+    section "$PACKAGE"
+    install_package "$PACKAGE"
+    success "$PACKAGE has been installed"
 }
 
 main "$@"

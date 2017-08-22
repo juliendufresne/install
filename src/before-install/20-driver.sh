@@ -8,7 +8,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/../../tools/_all_tools.sh"
+source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
 function main
 {
@@ -50,9 +50,11 @@ function main
             install_package "$package"
 
             warning "Driver $package installed successfully. You should reboot."
-            sleep 20
+            # return non zero to stop execution and force reboot
+            return 1
             ;;
         intel)
+            error "Unable to install intel specific graphic card. You must install it yourself."
             ;;
     esac
 }

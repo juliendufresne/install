@@ -15,7 +15,17 @@ function parse_opt
                     printf "\e[0;34m %s \e[0;35m %s\e[0;39m\n" "$_name" "$_version"
                 fi
                 # end the script now
-                exit "0"
+                exit 0
+                ;;
+            --exists)
+                if type -t "check_exists" | grep -q ^function$
+                then
+                    check_exists
+                    exit $?
+                fi
+                # end the script now
+                exit 10
+                ;;
         esac
         shift
     done

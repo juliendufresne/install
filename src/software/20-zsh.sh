@@ -9,12 +9,23 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r PACKAGE='zsh'
+
+function check_exists
+{
+    if ! [[ -d "$HOME/.oh-my-zsh" ]]
+    then
+        return 1
+    fi
+
+    return 0
+}
 
 function main
 {
     parse_opt "$@" || return "$?"
 
-    if [[ -d "$HOME/.oh-my-zsh" ]]
+    if check_exists
     then
         return 0
     fi
