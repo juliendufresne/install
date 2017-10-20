@@ -8,7 +8,6 @@ set -euo pipefail
 IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 source "$SCRIPT_DIR/tools/_all_tools.sh"
 
 function main
@@ -17,7 +16,6 @@ function main
     declare release_codename
     declare -r script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-    title "Software installation"
     ensure_user_is_in_sudoers || return "$?"
 
     identify_release "release_distributor_id" "release_codename" || return "$?"
@@ -32,26 +30,44 @@ function main
     esac
 
 
-    section "Pre install"
-
-    declare dir="$script_dir/hooks/pre-install"
+    declare dir="$script_dir/before-install"
     for file in $(cd "$dir" && ls -1 *.sh | sort -n)
     do
         /usr/bin/env bash "$dir/$file" || true
     done
 
+    section 'looking for software already installed'
     dir="$script_dir/software"
+    declare software_name
+    declare check_ok="\e[32m\xE2\x9C\x94\e[39m"
+    declare check_fail="\e[31m\xE2\x9C\x98\e[39m"
+    declare need_install=false
+
     for file in $(cd "$dir" && ls -1 *.sh | sort -n)
     do
-        action_name="${file##[0-9][0-9]-}"
-        action_name="${action_name%.sh}"
-        section "Install software $action_name"
-        /usr/bin/env bash "$dir/$file" || true
+        software_name="${file##[0-9][0-9]-}"
+        software_name="${software_name%.sh}"
+        if /usr/bin/env bash "$script_dir/software/$file" --exists
+        then
+            printf " %b %s\n" "$check_ok" "$software_name"
+        else
+            need_install=true
+            printf " %b %s\n" "$check_fail" "$software_name"
+        fi
     done
+
+    if ${need_install}
+    then
+        dir="$script_dir/software"
+        for file in $(cd "$dir" && ls -1 *.sh | sort -n)
+        do
+            /usr/bin/env bash "$dir/$file" || true
+        done
+    fi
 
     section "Post install"
 
-    dir="$script_dir/hooks/post-install"
+    dir="$script_dir/post-install"
     for file in $(cd "$dir" && ls -1 *.sh | sort -n)
     do
         /usr/bin/env bash "$dir/$file" || true

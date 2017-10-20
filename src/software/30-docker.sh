@@ -9,12 +9,23 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r PACKAGE='docker'
 
-function main
+function check_exists()
+{
+    if ! hash "$PACKAGE" &>/dev/null
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
 
-    if hash "docker" &>/dev/null
+    if check_exists
     then
         return 0
     fi
@@ -44,7 +55,7 @@ function main
             fi
 
             case "$release_codename" in
-                "trusty"|"xenial"|"yakkety"|"zesty")
+                "trusty"|"xenial"|"yakkety"|"zesty"|"artful")
                     install_package "apt-transport-https" "ca-certificates" "curl" "software-properties-common" &>"$output" || {
                         error_with_output_file "$output" "Something went wrong while installing the following packages" \
                               "- apt-transport-https" \
@@ -55,9 +66,9 @@ function main
                         return 1
                     }
 
-                    if [[ $release_codename = "zesty" ]]
+                    if [[ $release_codename = "artful" ]]
                     then
-                        release_codename="yakkety"
+                        release_codename="zesty"
                     fi
 
                     gpg_key_url="https://download.docker.com/linux/ubuntu/gpg"
@@ -128,7 +139,7 @@ function main
     rm "$output"
 }
 
-function display_software_version
+function display_software_version()
 {
     declare -n name="$1"
     declare -n version="$2"
@@ -147,3 +158,4 @@ function display_software_version
 }
 
 main "$@"
+

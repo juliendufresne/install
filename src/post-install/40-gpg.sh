@@ -8,20 +8,22 @@ set -euo pipefail
 IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/../../tools/_all_tools.sh"
+source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
 function main
 {
     section "Generate gpg key"
 
-    ask_generate_a_key || return 0
+    user_want_key || return 0
 
     declare -r tmp="$(mktemp)"
-    printf "\e[32m Real name\e[39m\n > "
+    printf "\e[32mReal name\e[39m\n> "
     read -e real_name
-    printf "\e[32m Email address\e[39m\n > "
+
+    printf "\e[32mEmail address\e[39m\n> "
     read -e email
-    printf "\e[32m Passphrase\e[39m\n > "
+
+    printf "\e[32mPassphrase\e[39m\n> "
     read -e -s passphrase
        
     cat >"$tmp" <<EOF
@@ -31,12 +33,12 @@ Key-Usage: sign
 Subkey-Type: RSA
 Subkey-Length: 4096
 Subkey-Usage: sign
-Name-Real: $real_name
-Name-Email: $email
+Name-Real: ${real_name}
+Name-Email: ${email}
 Expire-Date: 0
-Passphrase: $passphrase
+Passphrase: ${passphrase}
 EOF
-    note "Generating the key. This may take more than 25 minutes"
+    note "Generating the key. This may take a lot of times"
     gpg --batch --gen-key "$tmp"
     rm "$tmp"
     declare id="$(gpg --list-secret-keys --keyid-format LONG | grep -B 1 "$real_name <$email>" | head -n 1 | grep -o "rsa4096/\S*\s" | sed -e "s/rsa4096\///g" -e "s/\s//g")"
@@ -47,7 +49,7 @@ EOF
     read -e
 }
 
-function ask_generate_a_key()
+function user_want_key()
 {
     declare answer
     while true

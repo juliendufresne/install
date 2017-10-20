@@ -9,12 +9,22 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r LATEST_VERSION="$(curl -sSL "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release&build=&_=$(date +%s%N | cut -b1-13)" | grep -o "https://download.jetbrains.com/toolbox/jetbrains-toolbox-[0-9\.][0-9\.]*.tar.gz" | grep -o '[0-9][0-9\.]*[0-9]' | head -n 1)"
 
-function main
+function check_exists()
+{
+    if ! [[ -e "/opt/jetbrains-toolbox-$LATEST_VERSION" ]]
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
-    declare -r latest_version="$(curl -sSL "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release&build=&_=$(date +%s%N | cut -b1-13)" | grep -o "https://download.jetbrains.com/toolbox/jetbrains-toolbox-[0-9\.][0-9\.]*.tar.gz" | grep -o '[0-9][0-9\.]*[0-9]' | head -n 1)"
-    if [[ -e "/opt/jetbrains-toolbox-$latest_version" ]]
+    if check_exists
     then
         return 0
     fi
@@ -35,7 +45,7 @@ function main
     declare -r current_folder="$(pwd)"
     cd "$tmp_folder"
 
-    declare -r url="https://download.jetbrains.com/toolbox/jetbrains-toolbox-${latest_version}.tar.gz"
+    declare -r url="https://download.jetbrains.com/toolbox/jetbrains-toolbox-${LATEST_VERSION}.tar.gz"
     curl -sSL -o jetbrains-toolbox.tar.gz "$url" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to download file at $url"
 
@@ -49,7 +59,7 @@ function main
     }
 
     sudo mkdir -p /opt &>"$output" && \
-    sudo mv "jetbrains-toolbox-${latest_version}" /opt &>"$output" && \
+    sudo mv "jetbrains-toolbox-${LATEST_VERSION}" /opt &>"$output" && \
     cd /opt &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to move extracted archive to /opt/"
 
@@ -58,7 +68,7 @@ function main
 
     [[ -e "$symlink" ]] && sudo rm "$symlink"
 
-    sudo ln -s jetbrains-toolbox-${latest_version} "$symlink" &>"$output" || {
+    sudo ln -s jetbrains-toolbox-${LATEST_VERSION} "$symlink" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to make the new version the current one"
 
         return 1
@@ -75,7 +85,7 @@ function main
 
 }
 
-function user_instructions
+function user_instructions()
 {
     note "Please install phpstorm from JetBrains-ToolBox"
 
@@ -83,3 +93,4 @@ function user_instructions
 }
 
 main "$@"
+

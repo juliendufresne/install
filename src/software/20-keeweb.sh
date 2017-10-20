@@ -10,16 +10,28 @@ IFS=$'\n\t'
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
-function main
+function check_exists()
+{
+    if ! hash 'KeeWeb' &>/dev/null
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
 
-    if hash "KeeWeb" &>/dev/null
+    if check_exists
     then
         return 0
     fi
 
     declare -r output="$(mktemp)"
+
+    section "KeeWeb"
 
     install_package "curl" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while installing packages required to install KeeWeb:" \
@@ -53,3 +65,4 @@ function main
 }
 
 main "$@"
+

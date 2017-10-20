@@ -9,13 +9,28 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r LATEST_VERSION="$(curl -sSL https://releases.hashicorp.com/vagrant/ | grep -o "/vagrant/[0-9][0-9\.]*" | sed 's/\/vagrant\///g' | sort -rV | head -n 1)"
 
-function main
+function check_exists()
+{
+    if ! hash 'vagrant' &>/dev/null
+    then
+        return 1
+    fi
+
+    if [[ "$(vagrant --version | awk '{ print $2; }')" != "$LATEST_VERSION" ]]
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
-    declare -r latest_version="$(curl -sSL https://releases.hashicorp.com/vagrant/ | grep -o "/vagrant/[0-9][0-9\.]*" | sed 's/\/vagrant\///g' | sort -rV | head -n 1)"
 
-    if hash "vagrant" &>/dev/null && [[ "$(vagrant --version | awk '{ print $2; }')" = "$latest_version" ]]
+    if check_exists
     then
         return 0
     fi
@@ -25,7 +40,7 @@ function main
     cd "$tmp_folder"
 
     declare -r output="$(mktemp)"
-    declare -r url="https://releases.hashicorp.com/vagrant/${latest_version}/vagrant_${latest_version}_x86_64.deb"
+    declare -r url="https://releases.hashicorp.com/vagrant/${LATEST_VERSION}/vagrant_${LATEST_VERSION}_x86_64.deb"
     curl -sSL -o vagrant.deb "$url" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to download file at $url"
 
@@ -44,7 +59,7 @@ function main
     rm --recursive "$tmp_folder"
 }
 
-function display_software_version
+function display_software_version()
 {
     declare -n name="$1"
     declare -n version="$2"
@@ -63,3 +78,4 @@ function display_software_version
 }
 
 main "$@"
+

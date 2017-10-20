@@ -9,21 +9,33 @@ IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
+declare -r LATEST_VERSION="$(curl -sSL https://www.kernel.org/pub/software/scm/git/ | grep --only-matching "git-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*.tar.gz" | sort -rV | head -n 1 | sed -e 's/^git-//' -e 's/\.tar\.gz$//')"
 
-function main
+function check_exists()
+{
+    if ! hash 'git' &>/dev/null
+    then
+        return 1
+    fi
+
+    if [[ "$(git --version | awk '{ print $3 }')" != "$LATEST_VERSION" ]]
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
 
-    install_package "curl"
-    declare -r latest_version="$(curl -sSL https://www.kernel.org/pub/software/scm/git/ | grep --only-matching "git-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*.tar.gz" | sort -rV | head -n 1 | sed -e 's/^git-//' -e 's/\.tar\.gz$//')"
-
-    ensure_user_is_in_sudoers || return "$?"
-
-    if hash "git" &>/dev/null && [[ "$(git --version | awk '{ print $3 }')" = "$latest_version" ]]
+    if check_exists
     then
         return 0
     fi
 
+    ensure_user_is_in_sudoers || return "$?"
     declare -r output="$(mktemp)"
 
     install_package "make" "libssl-dev" "libcurl4-openssl-dev" "zlib1g-dev" "libexpat1-dev" "gettext" &>"$output" || {
@@ -50,7 +62,7 @@ function main
     declare -r current_folder="$(pwd)"
     cd "$tmp_folder"
 
-    declare -r url="https://www.kernel.org/pub/software/scm/git/git-${latest_version}.tar.gz"
+    declare -r url="https://www.kernel.org/pub/software/scm/git/git-${LATEST_VERSION}.tar.gz"
     curl -sSL -o git.tar.gz "$url" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to download file at $url"
 
@@ -83,7 +95,7 @@ function main
     rm "$output"
 }
 
-function display_software_version
+function display_software_version()
 {
     declare -n name="$1"
     declare -n version="$2"
@@ -102,3 +114,4 @@ function display_software_version
 }
 
 main "$@"
+

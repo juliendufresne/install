@@ -10,11 +10,21 @@ IFS=$'\n\t'
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
-function main
+function check_exists()
+{
+    if ! hash "google-chrome-stable" &>/dev/null
+    then
+        return 1
+    fi
+
+    return 0
+}
+
+function main()
 {
     parse_opt "$@" || return "$?"
 
-    if hash "google-chrome-stable" &>/dev/null
+    if check_exists
     then
         return 0
     fi
@@ -60,7 +70,7 @@ function main
     rm "$output"
 }
 
-function display_software_version
+function display_software_version()
 {
     declare -n name="$1"
     declare -n version="$2"
@@ -79,3 +89,4 @@ function display_software_version
 }
 
 main "$@"
+

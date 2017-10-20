@@ -8,11 +8,9 @@ set -euo pipefail
 IFS=$'\n\t'
 
 declare -r SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/../../tools/_all_tools.sh"
+source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
-note "Clean package list"
-
-function clean_package_list
+function clean_package_list()
 {
     ensure_user_is_in_sudoers
 
@@ -70,7 +68,14 @@ deb http://security.archive.ubuntu.com/ubuntu ${release_codename}-security multi
     sudo chown root:root "$file"
     sudo chmod 0664 "$file"
 
-    update_package_list
 }
 
+section 'Clean package list'
 clean_package_list
+sudo apt-get update
+success 'package list cleaned'
+
+section 'Upgrade the system'
+sudo apt-get --yes --no-show-upgraded full-upgrade
+success 'System upgraded to latest software version'
+

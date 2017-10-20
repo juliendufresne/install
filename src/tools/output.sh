@@ -6,14 +6,15 @@ function error_with_output_file()
 
     error "$@"
 
-    >&2 printf >&2 'Following is the output of the command\n'
-    >&2 printf >&2 '######################################\n'
+    >&2 printf 'Following is the output of the command\n'
+    >&2 printf '######################################\n'
     >&2 cat "$filename"
     >&2 rm "$filename"
 }
 
 function title()
 {
+    printf '\n'
     header '=' "${1:-}"
 }
 
@@ -32,11 +33,12 @@ function header()
 
     printf '\e[33m%b\e[39m\n' "$text"
     printf '\e[33m%*.*s\e[39m\n' '0' "$text_length" "$pad"
+    printf '\n'
 }
 
 function success()
 {
-    block " " "OK" "\e[37;44m" false "$@"
+    block " " "OK" "\e[37;42m" false "$@"
 }
 
 function error()
@@ -87,6 +89,7 @@ function block()
 
     declare -r -i fold_length="$((terminal_length - prefix_length - type_length))"
 
+    printf '\n'
     printf '%b%*.*s%b\n' "$color" '0' "$terminal_length" "$pad" "$color_reset" >"$file_descriptor"
     if [[ $# -eq 0 ]]
     then
@@ -110,4 +113,5 @@ function block()
         done
     fi
     printf '%b%*.*s%b\n' "$color" '0' "$terminal_length" "$pad" "$color_reset" >"$file_descriptor"
+    printf '\n'
 }
