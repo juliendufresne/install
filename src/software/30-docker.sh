@@ -66,11 +66,6 @@ function main()
                         return 1
                     }
 
-                    if [[ $release_codename = "artful" ]]
-                    then
-                        release_codename="zesty"
-                    fi
-
                     gpg_key_url="https://download.docker.com/linux/ubuntu/gpg"
                     apt_source_list_content="deb [arch=amd64] https://download.docker.com/linux/ubuntu $release_codename stable"
                     ;;

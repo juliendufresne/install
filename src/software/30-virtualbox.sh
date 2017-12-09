@@ -41,8 +41,11 @@ function main()
 
     curl -fsSL https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo apt-key add -
 
+    # TODO remove this once virtualbox package is available in artful
+    [[ "$release_codename" = "artful" ]] && release_codename="zesty"
+
     add_source_list "virtualbox.list" "deb http://download.virtualbox.org/virtualbox/debian $release_codename contrib"
-    install_package "dkms" "virtualbox-5.1"
+    install_package "dkms" "virtualbox-5.2"
 
     printf "Add extension pack\n"
     declare -r version="$(VBoxManage -v)"
