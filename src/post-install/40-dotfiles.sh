@@ -12,19 +12,10 @@ source "$SCRIPT_DIR/../tools/_all_tools.sh"
 
 function main
 {
-    handle_dotfiles
-    post_handle
-}
-
-function handle_dotfiles
-{
     section "Handling dotfiles"
 
     note "dotfiles is the name of all hidden files (starting with a dot)" \
          "This script suppose that you have a repository for your common dotfiles (.zshrc, .vimrc, ...)"
-
-    declare -r current_dir="$(pwd)"
-    declare -r phpstorm_dir=".PhpStorm2018.1"
 
     if ! [[ -d "$HOME/.files" ]]
     then
@@ -35,39 +26,13 @@ function handle_dotfiles
             return 0
         fi
 
-        clone_repo
+        clone_repo || return 0
     fi
 
-    if ! [[ -d "$HOME/.files" ]]
+    if [[ -f "$HOME/.files/install.sh" ]]
     then
-        return 0
+        /usr/bin/env bash "$HOME/.files/install.sh"
     fi
-
-    cd "$HOME/.files"
-
-    link .config/filezilla/sitemanager.xml || return_code="$?"
-    link .config/terminator/config || return_code="$?"
-    link .gitconfig || return_code="$?"
-    link .gitignore_global || return_code="$?"
-    link .mysql/workbench/connections.xml || return_code="$?"
-    link .mysql/workbench/server_instances.xml || return_code="$?"
-    link .mysql/workbench/snippets/DB_Management.txt || return_code="$?"
-    link .mysql/workbench/snippets/SQL_DDL_Statements.txt || return_code="$?"
-    link .mysql/workbench/snippets/SQL_DML_Statements.txt || return_code="$?"
-    link "${phpstorm_dir}/config/disabled_plugins.txt" || return_code="$?"
-    link "${phpstorm_dir}/config/fileTemplates" || return_code="$?"
-    link "${phpstorm_dir}/config/plugins" || return_code="$?"
-
-    for file in "$(ls -1 "${phpstorm_dir}/config/options")"
-    do
-        link "${phpstorm_dir}/config/options/${file}" || return_code="$?"
-    done
-    link .vim || return_code="$?"
-    link .vimrc || return_code="$?"
-    link .zsh || return_code="$?"
-    link .zshrc || return_code="$?"
-
-    cd "$current_dir"
 }
 
 function yes_no()
@@ -96,13 +61,13 @@ function yes_no()
         case "$answer" in
             y|yes)
                 return 0
-            ;;
+                ;;
             n|no)
                 return 1
-            ;;
+                ;;
             *)
                 printf '\e[33m Valid answers are: yes or no\e[39m\n'
-            ;;
+                ;;
         esac
     done
 }
@@ -119,18 +84,18 @@ function clone_repo()
             bitbucket)
                 url="$url@bitbucket.org"
                 break
-            ;;
+                ;;
             github)
                 url="$url@github.com"
                 break
-            ;;
+                ;;
             gitlab)
                 url="$url@gitlab.com"
                 break
-            ;;
+                ;;
             *)
                 >&2 printf '\e[31mPlease chose the number corresponding to your provider\e[39m\n'
-            ;;
+                ;;
         esac
     done
 
@@ -156,49 +121,5 @@ function clone_repo()
     git clone --quiet "$url" $HOME/.files
 }
 
-function link()
-{
-    declare -r relative_path="$1"
-    declare -r path_in_repo="$HOME/.files/$relative_path"
-    declare path_in_home="$HOME/$relative_path"
-    if [[ "$#" -gt 1 ]]
-    then
-        path_in_home="$HOME/$2"
-    fi
-
-    if ! [[ -e "$path_in_repo" ]]
-    then
-        return 1
-    fi
-
-    declare -r parent_directory="$(dirname "$path_in_home")"
-
-    if [[ -n "$parent_directory" ]] && ! [[ -d "$parent_directory" ]]
-    then
-        mkdir --parents "$parent_directory"
-    fi
-
-    # Test if the file or symbolic link exists even if the target is broken:
-    # -h return true
-    # -e return false
-    if [[ -h "$path_in_home" ]] || [[ -e "$path_in_home" ]]
-    then
-        rm --recursive "$path_in_home"
-    fi
-
-    ln --symbolic "$path_in_repo" "$path_in_home"
-
-    return 0
-}
-
-function post_handle
-{
-    mkdir -p "$HOME/.vim/bundle"
-    cd $_
-    if ! [[ -d vim-fugitive ]]
-    then
-        git clone git://github.com/tpope/vim-fugitive.git
-        vim -u NONE -c "helptags vim-fugitive/doc" -c q
-    fi
-}
 main
+
