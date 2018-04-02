@@ -24,7 +24,7 @@ function handle_dotfiles
          "This script suppose that you have a repository for your common dotfiles (.zshrc, .vimrc, ...)"
 
     declare -r current_dir="$(pwd)"
-    declare -r phpstorm_dir=".PhpStorm2017.3"
+    declare -r phpstorm_dir=".PhpStorm2018.1"
 
     if ! [[ -d "$HOME/.files" ]]
     then
