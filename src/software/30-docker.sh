@@ -55,7 +55,7 @@ function main()
             fi
 
             case "$release_codename" in
-                "trusty"|"xenial"|"yakkety"|"zesty"|"artful")
+                "trusty"|"xenial"|"yakkety"|"zesty"|"artful"|"bionic")
                     install_package "apt-transport-https" "ca-certificates" "curl" "software-properties-common" &>"$output" || {
                         error_with_output_file "$output" "Something went wrong while installing the following packages" \
                               "- apt-transport-https" \
