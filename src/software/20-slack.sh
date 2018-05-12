@@ -36,10 +36,11 @@ function main()
     fi
 
     declare -r output="$(mktemp)"
-    install_package "gconf2" "curl" &>"$output" || {
+    install_package "gconf2" "curl" "gir1.2-gnomekeyring-1.0" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while installing the following packages" \
               "- gconf2" \
-              "- curl"
+              "- curl"   \
+              "- gir1.2-gnomekeyring-1.0"
 
         return 1
     }
@@ -48,7 +49,7 @@ function main()
 
     cd "$tmp_folder"
 
-    declare -r url="https://downloads.slack-edge.com/linux_releases/slack-desktop-${LATEST_VERSION}-amd64.deb"
+    declare -r url="$(curl -sSL https://slack.com/downloads/instructions/linux | grep -o "https://downloads.slack-edge.com/linux_releases/.*.deb")"
     curl -sSL -o slack.deb "$url" &>"$output" || {
         error_with_output_file "$output" "Something went wrong while trying to download file at $url"
 
